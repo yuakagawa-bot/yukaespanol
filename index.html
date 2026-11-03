@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Azulejo 単語帳</title>
+<meta name="description" content="10テーマ166語を、カード、聞き取り、つづりで復習できるスペイン語単語帳です。">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#EDF2FA">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0B1230">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Azulejo">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gloock&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}img{max-width:100%}[hidden]{display:none!important}
+</style>
+<style>
+/* Layout: 学習カードを主役に、右(スマホでは下)に「覚えるほど埋まる単語タイルの壁」を置く */
+:root{
+  --bg:#EDF2FA; --surface:#FFFFFF; --ink:#12204A; --muted:#505D85; --line:#CBD6EC;
+  --cobalt:#1D3FAE; --on-cobalt:#FFFFFF; --cobalt-soft:#B9C9F2; --saffron:#E5A00D; --saffron-tint:#FBEFCF;
+  --ok:#11734C; --ok-tint:#DDF3E8; --bad:#AE3126; --bad-tint:#FBE4E1; --empty:#DEE5F3;
+  --display:"Gloock",Georgia,"Times New Roman",serif;
+  --body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0B1230; --surface:#151E46; --ink:#EEF2FD; --muted:#A8B4D8; --line:#2F3C70;
+  --cobalt:#8BA5FF; --on-cobalt:#0B1230; --cobalt-soft:#34468E; --saffron:#F4BD3C; --saffron-tint:#3D3213;
+  --ok:#62D6A4; --ok-tint:#123B2E; --bad:#FF9288; --bad-tint:#46201F; --empty:#232E5C; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B1230; --surface:#151E46; --ink:#EEF2FD; --muted:#A8B4D8; --line:#2F3C70;
+  --cobalt:#8BA5FF; --on-cobalt:#0B1230; --cobalt-soft:#34468E; --saffron:#F4BD3C; --saffron-tint:#3D3213;
+  --ok:#62D6A4; --ok-tint:#123B2E; --bad:#FF9288; --bad-tint:#46201F; --empty:#232E5C; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:400 15px/1.6 var(--body)}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--saffron);outline-offset:2px}
+#app{max-width:1080px;margin-inline:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px;display:grid;gap:18px}
+header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 20px}
+h1{margin:0;font:400 30px/1.15 var(--display);letter-spacing:.005em}
+h1 span{font:700 16px var(--body);margin-left:8px;color:var(--muted)}
+.summary{font-variant-numeric:tabular-nums;color:var(--muted);font-weight:500}
+.summary b{color:var(--ink);font-size:18px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:24px;align-items:start}
+.study{display:grid;gap:14px;min-width:0}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);border:2px solid var(--cobalt);background:var(--surface)}
+.tabs button{border:0;background:transparent;padding:9px 4px;font-weight:700;color:var(--cobalt)}
+.tabs button+button{border-left:2px solid var(--cobalt)}
+.tabs button[aria-selected="true"]{background:var(--cobalt);color:var(--on-cobalt)}
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;color:var(--muted);min-height:36px}
+.ghost{background:transparent;border:1.5px solid var(--line);padding:5px 12px;font-weight:500;color:var(--ink)}
+.ghost:hover{border-color:var(--cobalt)}
+.ghost[aria-pressed="true"]{background:var(--saffron-tint);border-color:var(--saffron);font-weight:700}
+.tile{background:var(--surface);border:1.5px solid var(--line);display:grid;min-width:0}
+.band{height:24px;background:
+  radial-gradient(circle at 50% 50%,var(--saffron) 0 3px,transparent 3.5px) 0 0/24px 24px,
+  conic-gradient(from 45deg,var(--cobalt) 25%,var(--surface) 0 50%,var(--cobalt) 0 75%,var(--surface) 0) 0 0/24px 24px}
+.pane{padding:22px;display:grid;gap:16px;justify-items:center;text-align:center;min-width:0}
+.crumb{font-size:13px;color:var(--muted);font-weight:500;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center}
+.flip{width:100%;min-height:210px;border:0;background:transparent;display:grid;place-content:center;gap:10px;padding:10px;min-width:0}
+.flip.turn{animation:turn .22s ease-out}
+@keyframes turn{from{transform:rotateX(55deg);opacity:.35}to{transform:none;opacity:1}}
+.word{font:400 clamp(34px,7vw,58px)/1.12 var(--display);overflow-wrap:anywhere;text-wrap:balance}
+.mean{font-size:clamp(23px,4.4vw,32px);font-weight:700;line-height:1.3;text-wrap:balance}
+.hint{font-size:13px;color:var(--muted)}
+.row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;width:100%}
+.btn{border:2px solid var(--cobalt);background:var(--surface);color:var(--cobalt);padding:10px 18px;font-weight:700;min-width:112px}
+.btn.solid{background:var(--cobalt);color:var(--on-cobalt)}
+.btn.bad{border-color:var(--bad);color:var(--bad)}
+.btn.ok{border-color:var(--ok);color:var(--ok)}
+.grow{flex:1 1 130px}
+.speak{border:1.5px solid var(--line);background:transparent;padding:6px 12px;font-weight:500;display:inline-flex;gap:6px;align-items:center}
+.speak:hover{border-color:var(--cobalt)}
+.speak svg{width:16px;height:16px;fill:currentColor;flex:none}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
+.choice{border:1.5px solid var(--line);background:var(--surface);padding:12px 10px;font-weight:500;min-height:62px;overflow-wrap:anywhere}
+.choice:hover:not(:disabled){border-color:var(--cobalt)}
+.choice:disabled{cursor:default}
+.choice.right{background:var(--ok-tint);border-color:var(--ok);color:var(--ok);font-weight:700}
+.choice.wrong{background:var(--bad-tint);border-color:var(--bad);color:var(--bad)}
+.spell{display:grid;gap:10px;width:100%;max-width:440px}
+#spell-input{width:100%;padding:11px 12px;border:2px solid var(--cobalt);background:var(--bg);font:400 22px var(--display);text-align:center;border-radius:0}
+.keys{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.keys button{width:40px;height:38px;border:1.5px solid var(--line);background:transparent;font-size:17px}
+.keys button:hover{border-color:var(--cobalt)}
+.result{width:100%;padding:12px;font-weight:500;overflow-wrap:anywhere}
+.result.right{background:var(--ok-tint);color:var(--ok)}
+.result.wrong{background:var(--bad-tint);color:var(--bad)}
+.result b{font-family:var(--display);font-weight:400;font-size:21px}
+.note{color:var(--muted);font-size:13px}
+.list{display:grid;gap:18px;padding:18px;min-width:0}
+.list h2{margin:0 0 4px;font-size:16px;font-weight:700;display:flex;gap:8px;align-items:baseline}
+.list h2 span{font:400 15px var(--display);color:var(--muted)}
+.item{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto 36px;gap:10px;align-items:center;padding:7px 0;border-top:1px solid var(--line)}
+.item .es{font:400 18px/1.25 var(--display);overflow-wrap:anywhere}
+.item .ja{overflow-wrap:anywhere}
+.pill{font-size:12px;font-weight:700;padding:1px 7px;white-space:nowrap;background:var(--empty);color:var(--muted)}
+.pill.learning{background:var(--cobalt-soft);color:var(--ink)}
+.pill.known{background:var(--cobalt);color:var(--on-cobalt)}
+.pill.weak{background:var(--saffron);color:#231A02}
+.icon{width:36px;height:36px;padding:0;justify-content:center}
+.wall{display:grid;gap:12px}
+.wall-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.wall-head h2{margin:0;font-size:16px;font-weight:700}
+.units{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.unit{text-align:left;border:2px solid var(--line);background:var(--surface);padding:10px;display:grid;gap:6px;align-content:start;min-width:0}
+.unit:hover{border-color:var(--cobalt)}
+.unit[aria-pressed="true"]{border-color:var(--cobalt)}
+.unit[aria-pressed="false"]{opacity:.55}
+.unit strong{display:flex;justify-content:space-between;gap:6px;align-items:baseline;line-height:1.3}
+.unit small{font:500 12px var(--body);color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.unit em{font:400 13px var(--display);color:var(--muted)}
+.mosaic{display:grid;grid-template-columns:repeat(10,1fr);gap:2px}
+.mosaic i{aspect-ratio:1;background:var(--empty);display:block}
+.mosaic i.learning{background:var(--cobalt-soft)}
+.mosaic i.known{background:var(--cobalt)}
+.mosaic i.weak{background:var(--saffron)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:11px;height:11px;display:block;background:var(--empty)}
+.legend i.learning{background:var(--cobalt-soft)}.legend i.known{background:var(--cobalt)}.legend i.weak{background:var(--saffron)}
+footer{display:grid;gap:8px;color:var(--muted);font-size:13px;max-width:70ch}
+footer .row{justify-content:flex-start;align-items:center}
+.link{background:none;border:0;padding:0;text-decoration:underline;color:var(--muted)}
+.danger{color:var(--bad);border-color:var(--bad)}
+@media (max-width:820px){.layout{grid-template-columns:minmax(0,1fr)}h1{font-size:26px}.pane{padding:18px 14px}.flip{min-height:170px}}
+@media (max-width:480px){.item{grid-template-columns:minmax(0,1fr) auto 36px}.item .ja{grid-column:1/3;grid-row:2;font-size:14px;color:var(--muted)}.item .speak{grid-column:3;grid-row:1/3}.item .pill{grid-column:2;grid-row:1}}
+@media (prefers-reduced-motion:reduce){.flip.turn{animation:none}}
+</style>
+</head>
+<body>
+<div id="app" lang="ja"></div>
+
+<script>
+const RAW = [
+["saludos","挨拶","Saludos",`hola|やあ、こんにちは
+buenos días|おはようございます
+buenas tardes|こんにちは(午後)
+buenas noches|こんばんは、おやすみなさい
+adiós|さようなら
+hasta luego|またあとで
+hasta mañana|また明日
+por favor|お願いします
+gracias|ありがとう
+de nada|どういたしまして
+perdón|すみません
+lo siento|ごめんなさい、残念です
+mucho gusto|はじめまして
+¿Cómo estás?|元気?
+muy bien|とても元気です
+me llamo|私の名前は〜です
+sí|はい
+no|いいえ`],
+["familia","家族","La familia",`la familia|家族
+la madre|母
+el padre|父
+los padres|両親
+el hermano|兄、弟
+la hermana|姉、妹
+el hijo|息子
+la hija|娘
+el abuelo|祖父
+la abuela|祖母
+el tío|おじ
+la tía|おば
+el primo|いとこ(男性)
+la prima|いとこ(女性)
+el esposo|夫
+la esposa|妻
+el bebé|赤ちゃん`],
+["vida","生活","La vida",`la casa|家
+el trabajo|仕事
+la cocina|台所
+el baño|浴室、トイレ
+la cama|ベッド
+el agua|水
+la comida|食事、食べ物
+comer|食べる
+beber|飲む
+dormir|眠る
+vivir|住む
+trabajar|働く
+estudiar|勉強する
+cocinar|料理する
+limpiar|掃除する
+desayunar|朝食をとる`],
+["estaciones","季節①","Las estaciones",`la estación|季節
+la primavera|春
+el verano|夏
+el otoño|秋
+el invierno|冬
+el sol|太陽
+la lluvia|雨
+la nieve|雪
+el viento|風
+la flor|花
+el clima|気候
+hace calor|暑い
+hace frío|寒い
+llueve|雨が降る
+nieva|雪が降る`],
+["meses","季節②","Los meses",`enero|1月
+febrero|2月
+marzo|3月
+abril|4月
+mayo|5月
+junio|6月
+julio|7月
+agosto|8月
+septiembre|9月
+octubre|10月
+noviembre|11月
+diciembre|12月
+el mes|(暦の)月
+el año|年`],
+["donde","どこ","¿Dónde?",`¿dónde?|どこ
+¿Dónde está?|どこにありますか?
+aquí|ここ
+allí|あそこ
+cerca|近くに
+lejos|遠くに
+a la derecha|右に
+a la izquierda|左に
+todo recto|まっすぐ
+la calle|通り
+la ciudad|街、都市
+la estación|駅
+el hotel|ホテル
+el aeropuerto|空港
+el museo|美術館、博物館
+el parque|公園
+el banco|銀行
+la tienda|店`],
+["cuenta","会計","La cuenta",`la cuenta|お会計
+el dinero|お金
+la tarjeta|カード
+el efectivo|現金
+el precio|値段
+¿Cuánto cuesta?|いくらですか?
+pagar|支払う
+comprar|買う
+vender|売る
+caro|値段が高い
+barato|安い
+gratis|無料の
+la propina|チップ
+el recibo|レシート
+el cambio|お釣り
+el euro|ユーロ`],
+["animales","動物","Los animales",`el animal|動物
+el perro|犬
+el gato|猫
+el caballo|馬
+la vaca|牛
+el cerdo|豚
+la oveja|羊
+la gallina|ニワトリ
+el pájaro|鳥
+el pez|魚
+el conejo|ウサギ
+el ratón|ネズミ
+el mono|サル
+el oso|クマ
+el león|ライオン
+el tigre|トラ
+el elefante|ゾウ`],
+["deportes","スポーツ","Los deportes",`el deporte|スポーツ
+el fútbol|サッカー
+el béisbol|野球
+el tenis|テニス
+el baloncesto|バスケットボール
+la natación|水泳
+el gimnasio|ジム
+el equipo|チーム
+el partido|試合
+el jugador|選手
+la pelota|ボール
+jugar|(スポーツを)する
+correr|走る
+nadar|泳ぐ
+ganar|勝つ
+perder|負ける`],
+["numeros","数字","Los números",`cero|0
+uno|1
+dos|2
+tres|3
+cuatro|4
+cinco|5
+seis|6
+siete|7
+ocho|8
+nueve|9
+diez|10
+once|11
+doce|12
+quince|15
+veinte|20
+treinta|30
+cincuenta|50
+cien|100
+mil|1000`]];
+const UNITS = RAW.map(([id,name,es,w])=>({id,name,es,words:w.trim().split("\n").map(l=>{const [e,j]=l.split("|");return {key:id+"/"+e,es:e,ja:j,unit:id,unitName:name}})}));
+const ALL = UNITS.flatMap(u=>u.words);
+const STORE="azulejo-v1", SPEAK='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm11.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM12 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>';
+
+const S={stats:{},updatedAt:0,mode:"card",selected:UNITS.map(u=>u.id),weakOnly:false,reverse:false,
+  word:null,flipped:false,turn:false,picked:null,choices:[],reveal:false,answer:null,note:"",recent:[],interacted:false,confirmReset:false};
+
+function loadLocal(){try{const d=JSON.parse(localStorage.getItem(STORE)||"null");if(d){S.stats=d.stats||{};S.updatedAt=d.updatedAt||0;if(d.mode)S.mode=d.mode;if(Array.isArray(d.selected)&&d.selected.length)S.selected=d.selected.filter(i=>UNITS.some(u=>u.id===i));S.reverse=!!d.reverse}}catch(e){}}
+function saveLocal(){try{localStorage.setItem(STORE,JSON.stringify({stats:S.stats,updatedAt:S.updatedAt,mode:S.mode,selected:S.selected,reverse:S.reverse}))}catch(e){}}
+
+/* 記憶の状態 */
+function stateOf(w){const s=S.stats[w.key];if(!s)return "new";if(s.s>=2)return "known";return s.m>0?"weak":"learning"}
+const LABEL={new:"未学習",learning:"学習中",known:"覚えた",weak:"苦手"};
+function grade(w,ok){const s=S.stats[w.key]||{s:0,m:0};if(ok)s.s=Math.min(3,s.s+1);else{s.s=0;s.m++}S.stats[w.key]=s;S.updatedAt=Date.now();saveLocal()}
+function pool(){const inScope=ALL.filter(w=>S.selected.includes(w.unit));return S.weakOnly?inScope.filter(w=>stateOf(w)==="weak"):inScope}
+const WEIGHT={weak:8,new:4,learning:3,known:1};
+function pickWord(){const p=pool();if(!p.length)return null;
+  const fresh=p.length>4?p.filter(w=>!S.recent.includes(w.key)):p.filter(w=>!S.word||w.key!==S.word.key);
+  const c=fresh.length?fresh:p;let t=c.reduce((a,w)=>a+WEIGHT[stateOf(w)],0),r=Math.random()*t;
+  for(const w of c){r-=WEIGHT[stateOf(w)];if(r<=0)return w}return c[c.length-1]}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function makeChoices(w){const seen=new Set([w.ja]),out=[w];for(const c of shuffle(ALL.filter(x=>x.unit===w.unit)).concat(shuffle(ALL))){if(out.length>=4)break;if(!seen.has(c.ja)){seen.add(c.ja);out.push(c)}}return shuffle(out)}
+function next(){S.word=pickWord();S.flipped=false;S.picked=null;S.reveal=false;S.answer=null;S.note="";S.confirmReset=false;
+  if(S.word){S.recent=S.recent.concat(S.word.key).slice(-3);S.choices=makeChoices(S.word);if(S.mode==="listen"&&S.interacted)speak(S.word.es)}}
+
+/* 答え合わせ */
+function fold(t){return t.normalize("NFD").replace(/[̀-ͯ]/g,"")}
+function clean(t){return t.toLowerCase().replace(/[¿?¡!.,]/g,"").replace(/\s+/g," ").trim().replace(/^(el|la|los|las) /,"")}
+function check(input,target){const a=clean(input),b=clean(target);if(a===b)return "exact";return fold(a)===fold(b)?"accent":"no"}
+
+/* 音声 */
+const canSpeak="speechSynthesis" in window&&"SpeechSynthesisUtterance" in window;let voice=null;
+function pickVoice(){try{const v=speechSynthesis.getVoices();voice=v.find(x=>/^es[-_]ES/i.test(x.lang))||v.find(x=>/^es/i.test(x.lang))||null}catch(e){}}
+if(canSpeak){pickVoice();try{speechSynthesis.addEventListener("voiceschanged",pickVoice)}catch(e){}}
+function speak(text,rate){if(!canSpeak)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang=voice?voice.lang:"es-ES";if(voice)u.voice=voice;u.rate=rate||.9;speechSynthesis.speak(u)}catch(e){}}
+
+/* 描画 */
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const $=id=>document.getElementById(id);
+const speakBtn=(w,label,rate)=>canSpeak?`<button type="button" class="speak" data-act="say" data-es="${esc(w.es)}" data-rate="${rate||.9}" lang="ja">${SPEAK}${label||"聞く"}</button>`:"";
+function shell(){$("app").innerHTML=`
+<header><h1>Azulejo<span>スペイン語 単語帳</span></h1><div class="summary" id="summary"></div></header>
+<div class="layout"><main class="study">
+<div class="tabs" role="tablist" id="tabs"></div>
+<div class="toolbar" id="toolbar"></div>
+<div id="study"></div></main>
+<aside class="wall"><div class="wall-head"><h2>出題するテーマ</h2><button type="button" class="ghost" data-act="all">すべて選ぶ</button></div>
+<div class="units" id="units"></div>
+<div class="legend"><span><i></i>未学習</span><span><i class="learning"></i>学習中</span><span><i class="known"></i>覚えた</span><span><i class="weak"></i>苦手</span></div>
+</aside></div><footer id="footer"></footer>`}
+function renderSummary(){const c={known:0,weak:0};ALL.forEach(w=>{const s=stateOf(w);if(s in c)c[s]++});
+  $("summary").innerHTML=`覚えた <b>${c.known}</b> / ${ALL.length} 語 ・ 苦手 <b>${c.weak}</b> 語`}
+function renderTabs(){$("tabs").innerHTML=[["card","カード"],["listen","聞き取り"],["spell","つづり"],["list","一覧"]].map(([m,l])=>`<button type="button" role="tab" aria-selected="${S.mode===m}" data-act="mode" data-mode="${m}">${l}</button>`).join("")}
+function renderToolbar(){const weak=ALL.filter(w=>S.selected.includes(w.unit)&&stateOf(w)==="weak").length;
+  $("toolbar").innerHTML=`<button type="button" class="ghost" id="weak-toggle" data-act="weak" aria-pressed="${S.weakOnly}">苦手だけ(${weak}語)</button>`+
+  (S.mode==="card"?`<button type="button" class="ghost" id="reverse-toggle" data-act="reverse">${S.reverse?"日本語 → スペイン語":"スペイン語 → 日本語"}</button>`:"")}
+function emptyPane(){return `<div class="tile"><div class="band"></div><div class="pane"><p class="mean">${S.weakOnly?"苦手な単語はありません":"テーマを選んでください"}</p>
+<p class="note">${S.weakOnly?"間違えた単語がここに集まります。2回続けて正解すると、苦手から外れます。":""}</p>${S.weakOnly?'<button type="button" class="btn solid" data-act="weak">すべての単語に戻る</button>':""}</div></div>`}
+function crumb(w){return `<div class="crumb"><span>${esc(w.unitName)}</span><span class="pill ${stateOf(w)}">${LABEL[stateOf(w)]}</span></div>`}
+function renderStudy(){const el=$("study");
+  if(S.mode==="list"){el.innerHTML=renderList();return}
+  if(!S.word||!pool().some(w=>w.key===S.word.key)&&S.answer===null&&S.picked===null&&!S.flipped){S.word=null;next()}
+  if(!S.word){el.innerHTML=emptyPane();return}
+  const w=S.word;
+  el.innerHTML=`<div class="tile"><div class="band"></div><div class="pane">${crumb(w)}${S.mode==="card"?cardView(w):S.mode==="listen"?listenView(w):spellView(w)}</div></div>`;
+  if(S.mode==="spell"&&S.interacted){const t=S.answer===null?$("spell-input"):$("next-btn");if(t)t.focus({preventScroll:true})}
+  S.turn=false}
+function cardView(w){const front=S.reverse?`<div class="mean">${esc(w.ja)}</div>`:`<div class="word" lang="es">${esc(w.es)}</div>`;
+  const back=S.reverse?`<div class="word" lang="es">${esc(w.es)}</div>`:`<div class="mean">${esc(w.ja)}</div>`;
+  return `<button type="button" class="flip${S.turn?" turn":""}" data-act="flip" aria-label="カードをめくる">${S.flipped?back:front}<span class="hint">${S.flipped?"もう一度タップで表に戻す":"タップして答えを見る"}</span></button>
+  ${speakBtn(w)}
+  <div class="row"><button type="button" class="btn bad grow" data-act="rate" data-ok="0">まだ覚えていない</button><button type="button" class="btn solid grow" data-act="rate" data-ok="1">覚えた</button></div>`}
+function listenView(w){const done=S.picked!==null;
+  return `<div class="row">${speakBtn(w,"もう一度聞く")}${speakBtn(w,"ゆっくり",.6)}</div>
+  ${S.reveal||done||!canSpeak?`<div class="word" lang="es">${esc(w.es)}</div>`:`<button type="button" class="link" data-act="reveal">音が出ないときは文字を見る</button>`}
+  ${!canSpeak?'<p class="note">このブラウザは読み上げに対応していないため、文字で出題します。</p>':""}
+  <div class="choices">${S.choices.map(c=>{let cl="";if(done){if(c.key===w.key)cl="right";else if(c.key===S.picked)cl="wrong"}
+    return `<button type="button" class="choice ${cl}" data-act="pick" data-key="${esc(c.key)}" ${done?"disabled":""}>${esc(c.ja)}</button>`}).join("")}</div>
+  ${done?'<button type="button" class="btn solid" id="next-btn" data-act="next">次へ</button>':""}`}
+function spellView(w){const done=S.answer!==null;
+  const res=done?(S.answer==="no"?`<div class="result wrong">正解は <b lang="es">${esc(w.es)}</b></div>`:
+    `<div class="result right">${S.answer==="accent"?"正解です。記号まで書くと":"正解です。"} <b lang="es">${esc(w.es)}</b></div>`):"";
+  return `<div class="mean">${esc(w.ja)}</div>
+  <form class="spell" id="spell-form" autocomplete="off">
+    <input id="spell-input" lang="es" aria-label="スペイン語で入力" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="スペイン語で入力" ${done?"readonly":""}>
+    ${done?"":`<div class="keys" aria-label="特殊文字">${["á","é","í","ó","ú","ü","ñ","¿"].map(k=>`<button type="button" data-act="key" data-k="${k}">${k}</button>`).join("")}</div>`}
+    ${S.note?`<p class="note" role="alert">${esc(S.note)}</p>`:""}
+    ${res}
+    <div class="row">${done?`${speakBtn(w)}<button type="button" class="btn solid" id="next-btn" data-act="next">次へ</button>`:`<button type="button" class="btn" data-act="giveup">わからない</button><button type="submit" class="btn solid">答え合わせ</button>`}</div>
+  </form><p class="note">el / la などの冠詞はなくても正解にします。</p>`}
+function renderList(){const units=UNITS.filter(u=>S.selected.includes(u.id));
+  const body=units.map(u=>{const ws=u.words.filter(w=>!S.weakOnly||stateOf(w)==="weak");if(!ws.length)return "";
+    return `<section><h2>${esc(u.name)} <span lang="es">${esc(u.es)}</span></h2>${ws.map(w=>`<div class="item"><div class="es" lang="es">${esc(w.es)}</div><div class="ja">${esc(w.ja)}</div><span class="pill ${stateOf(w)}">${LABEL[stateOf(w)]}</span>${canSpeak?`<button type="button" class="speak icon" data-act="say" data-es="${esc(w.es)}" aria-label="${esc(w.es)}を聞く">${SPEAK}</button>`:"<span></span>"}</div>`).join("")}</section>`}).join("");
+  return body?`<div class="tile"><div class="band"></div><div class="list">${body}</div></div>`:emptyPane()}
+function renderUnits(){const all=S.selected.length===UNITS.length;
+  $("units").innerHTML=UNITS.map(u=>{const known=u.words.filter(w=>stateOf(w)==="known").length;
+    return `<button type="button" class="unit" data-act="unit" data-id="${u.id}" aria-pressed="${S.selected.includes(u.id)}">
+    <strong>${esc(u.name)}<small>${known}/${u.words.length}</small></strong><em lang="es">${esc(u.es)}</em>
+    <span class="mosaic" aria-hidden="true">${u.words.map(w=>`<i class="${stateOf(w)==="new"?"":stateOf(w)}"></i>`).join("")}</span></button>`}).join("")}
+function renderFooter(){$("footer").innerHTML=`<p style="margin:0">単語はテーマに合わせて選んだ基本語です。デュオリンゴのレッスンと一致しないものもあります。</p>
+<div class="row"><span>記録はこの端末のブラウザに保存されます。</span>
+${S.confirmReset?`<button type="button" class="ghost danger" data-act="reset-yes">記録をすべて消す</button><button type="button" class="ghost" data-act="reset-no">やめる</button>`:`<button type="button" class="link" data-act="reset">記録を消す</button>`}</div>`}
+function renderAll(){renderSummary();renderTabs();renderToolbar();renderStudy();renderUnits();renderFooter()}
+
+/* 操作 */
+document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b)return;S.interacted=true;const a=b.dataset.act;
+  if(a==="mode"){S.mode=b.dataset.mode;saveLocal();next();renderAll()}
+  else if(a==="weak"){S.weakOnly=!S.weakOnly;next();renderAll()}
+  else if(a==="reverse"){S.reverse=!S.reverse;S.flipped=false;saveLocal();renderToolbar();renderStudy()}
+  else if(a==="flip"){S.flipped=!S.flipped;S.turn=true;renderStudy()}
+  else if(a==="rate"){grade(S.word,b.dataset.ok==="1");next();renderAll()}
+  else if(a==="say"){speak(b.dataset.es,+b.dataset.rate||.9)}
+  else if(a==="reveal"){S.reveal=true;renderStudy()}
+  else if(a==="pick"){if(S.picked!==null)return;S.picked=b.dataset.key;grade(S.word,S.picked===S.word.key);renderSummary();renderToolbar();renderUnits();renderStudy();const n=$("next-btn");if(n)n.focus({preventScroll:true})}
+  else if(a==="next"){next();renderAll()}
+  else if(a==="key"){const i=$("spell-input"),st=i.selectionStart??i.value.length,en=i.selectionEnd??st;i.value=i.value.slice(0,st)+b.dataset.k+i.value.slice(en);i.focus();i.setSelectionRange(st+1,st+1)}
+  else if(a==="giveup"){S.answer="no";S.note="";grade(S.word,false);renderSummary();renderToolbar();renderUnits();renderStudy();speak(S.word.es)}
+  else if(a==="unit"){const id=b.dataset.id,all=S.selected.length===UNITS.length;
+    if(all)S.selected=[id];else if(S.selected.includes(id))S.selected=S.selected.length===1?UNITS.map(u=>u.id):S.selected.filter(x=>x!==id);else S.selected=S.selected.concat(id);
+    saveLocal();S.recent=[];next();renderToolbar();renderStudy();renderUnits()}
+  else if(a==="all"){S.selected=UNITS.map(u=>u.id);saveLocal();next();renderToolbar();renderStudy();renderUnits()}
+  else if(a==="reset"){S.confirmReset=true;renderFooter()}
+  else if(a==="reset-no"){S.confirmReset=false;renderFooter()}
+  else if(a==="reset-yes"){S.stats={};S.updatedAt=Date.now();S.weakOnly=false;saveLocal();next();renderAll()}
+});
+document.addEventListener("submit",e=>{if(e.target.id!=="spell-form")return;e.preventDefault();S.interacted=true;
+  if(S.answer!==null){next();renderAll();return}
+  const input=$("spell-input"),val=input.value;if(!val.trim()){S.note="答えを入力してください。";renderStudy();return}
+  const r=check(val,S.word.es);S.answer=r;S.note="";grade(S.word,r!=="no");renderSummary();renderToolbar();renderUnits();renderStudy();const i=$("spell-input");if(i)i.value=val;speak(S.word.es)});
+
+loadLocal();shell();next();renderAll();
+if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js').catch(()=>{})})}
+</script>
+</body>
+</html>
